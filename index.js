@@ -10,6 +10,21 @@ const port = process.env.PORT || 5000;
 //middleware
 app.use(cors());
 app.use(express.json());
+//authorization
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECURE, (err, decoded) => {
+    if (err) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rek1t.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 
@@ -29,6 +44,7 @@ async function run() {
       .db("doctors_portal")
       .collection("bookings");
     const usersCollection = client.db("doctors_portal").collection("users");
+
     //users put api
     app.put("/user/:email", async (req, res) => {
       const email = req.params.email;
@@ -58,11 +74,16 @@ async function run() {
       const services = await cursor.toArray();
       res.send(services);
     });
-    app.get("/booking", async (req, res) => {
+    app.get("/booking", verifyJWT, async (req, res) => {
       const patient = req.query.patient;
-      const query = { patient: patient };
-      const booking = await bookingCollection.find(query).toArray();
-      res.send(booking);
+      const decodedEmail = req.decoded.email;
+      if (patient === decodedEmail) {
+        const query = { patient: patient };
+        const booking = await bookingCollection.find(query).toArray();
+        res.send(booking);
+      } else {
+        return res.status(403).send({ message: "forbidden access" });
+      }
     });
     app.post("/booking", async (req, res) => {
       const booking = req.body;
