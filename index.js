@@ -74,6 +74,12 @@ async function run() {
       const services = await cursor.toArray();
       res.send(services);
     });
+    //get all users
+    app.get("/user", async (req, res) => {
+      const users = await usersCollection.find().toArray();
+      res.send(users);
+    });
+
     app.get("/booking", verifyJWT, async (req, res) => {
       const patient = req.query.patient;
       const decodedEmail = req.decoded.email;
