@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const query = require("express/lib/middleware/query");
 require("dotenv").config();
 
 const app = express();
@@ -34,6 +35,12 @@ async function run() {
       const cursor = servicesCollection.find(query);
       const services = await cursor.toArray();
       res.send(services);
+    });
+    app.get("/booking", async (req, res) => {
+      const patient = req.query.patient;
+      const query = { patient: patient };
+      const booking = await bookingCollection.find(query).toArray();
+      res.send(booking);
     });
     app.post("/booking", async (req, res) => {
       const booking = req.body;
